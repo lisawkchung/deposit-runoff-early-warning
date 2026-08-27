@@ -1,0 +1,36 @@
+seed: 42
+
+data:
+  path: data/demo_daily_balances.csv
+  n_accounts: 800
+  start_date: 2023-12-01
+  end_date: 2024-07-30
+
+snapshots:
+  train: [2024-01-31, 2024-02-29, 2024-03-31, 2024-04-30]
+  validation: 2024-05-31
+  test: 2024-06-30
+
+v1:
+  history_days: 30
+  recent_days: 7
+  future_days: 30
+  runoff_ratio: 0.50
+
+v2_robustness:
+  reference_days: 30
+  observation_days: 30
+  lead_days: 14
+  outcome_days: 30
+  stable_ratio: 0.90
+  runoff_ratio: 0.50
+  materiality_floor_units: 100.0
+
+model:
+  n_estimators: 1000
+  learning_rate: 0.05
+  num_leaves: 31
+  subsample: 0.80
+  colsample_bytree: 0.80
+  reg_lambda: 1.0
+  random_state: 42

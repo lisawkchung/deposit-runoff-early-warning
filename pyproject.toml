@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deposit-runoff"
+version = "0.1.0"
+description = "Portfolio case study for deposit-runoff risk modeling and model-validity analysis"
+requires-python = ">=3.11"
+dependencies = [
+  "lightgbm>=4.0",
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "pandas>=2.1",
+  "PyYAML>=6.0",
+  "scikit-learn>=1.4",
+  "shap>=0.45",
+]
+
+[project.optional-dependencies]
+dev = [
+  "nbstripout>=0.7",
+  "pre-commit>=3.7",
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
