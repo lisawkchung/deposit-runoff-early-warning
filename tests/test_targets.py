@@ -1,3 +1,4 @@
+import pytest
 import pandas as pd
 
 from deposit_runoff.features import build_v1_snapshot
@@ -22,6 +23,18 @@ def test_future_changes_label_but_not_features(simple_panel):
     feature_cols = ["asof_balance", "avg_bal_7d", "avg_bal_30d", "recent7_vs_30d_pct"]
     pd.testing.assert_series_equal(left.loc["A", feature_cols], right.loc["A", feature_cols])
     assert left.loc["A", "runoff_flag"] != right.loc["A", "runoff_flag"]
+
+
+def test_incomplete_future_window_excluded(simple_panel):
+    # Truncate panel so account B has only 15 future days after 2024-01-31
+    # (data ends 2024-02-15 for B instead of 2024-03-01)
+    truncated = simple_panel.loc[
+        ~((simple_panel["account_id"] == "B") & (simple_panel["date"] > pd.Timestamp("2024-02-15")))
+    ]
+    with pytest.warns(UserWarning, match="incomplete future window"):
+        out = build_v1_snapshot(truncated, "2024-01-31")
+    assert "B" not in out["account_id"].values
+    assert "A" in out["account_id"].values
 
 
 def test_v2_lead_screen_is_conditional_future_filter():

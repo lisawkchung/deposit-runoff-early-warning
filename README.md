@@ -1,6 +1,6 @@
 # Deposit Runoff Early-Warning: From Predictive Performance to Model Validity
 
-A temporal LightGBM model reached **~0.85 ROC-AUC** and **~0.47 PR-AUC** versus a **~0.07 prevalence baseline** on an unseen month. The more important finding came after the model was challenged: recent deterioration drove much of the signal, and **event-risk prediction and dollar-exposure prioritization were different business objectives**.
+On an unseen monthly holdout, LightGBM reached **~0.85 ROC-AUC** and **~0.47 PR-AUC**; the prevalence-based PR-AUC benchmark was **~0.07**. The more important finding came after the model was challenged: recent deterioration drove much of the signal, and **event-risk prediction and dollar-exposure prioritization were different business objectives**.
 
 ## Problem
 
@@ -21,7 +21,7 @@ The original analysis used a confidential, multi-year daily deposit-account pane
 - Population: active, positive-balance checking and savings accounts
 - Public repo: institution names, internal database objects, product names, identifiers, exact portfolio sizes, and absolute dollar amounts are removed or generalized
 
-Raw institutional data are **not** included. `data/README.md` documents the generic schema, and the repo includes a deterministic synthetic dataset generator for code-path reproduction.
+Raw institutional data are **not** included. `data/README.md` documents the generic schema, and the repo includes a deterministic synthetic dataset generator for code-path reproduction. In the original analysis, account-level window aggregation was pushed down to the cloud data warehouse; the public repository reproduces the same analytical logic in pandas on synthetic data.
 
 ## Approach
 
@@ -35,6 +35,8 @@ Raw institutional data are **not** included. `data/README.md` documents the gene
 
 **5. Objective audit.** Event frequency and funding exposure were compared separately rather than assuming that a single risk score optimized both.
 
+The project prioritized problem formulation, temporal validation, and model auditing over broad algorithm search.
+
 ## Results
 
 | Evaluation | Model / baseline | ROC-AUC | PR-AUC |
@@ -46,7 +48,7 @@ Raw institutional data are **not** included. `data/README.md` documents the gene
 
 On the unseen holdout, the highest-risk 10% captured **~56% of labeled runoff events** and **~50% of labeled balance decline**.
 
-The objective audit was more revealing:
+The objective audit was more revealing (figures below are under the percentage-based V1 target):
 
 | Top 10% ranked by | Event capture | Dollar-decline capture |
 |---|---:|---:|
@@ -56,13 +58,13 @@ The objective audit was more revealing:
 
 ![Event risk versus dollar exposure](reports/figures/event_vs_dollar_capture.png)
 
-**Interpretation:** behavioral ML added clear value for identifying runoff events, while simple large-balance ranking was stronger for concentrating dollar exposure. The practical recommendation is therefore **behavioral risk scoring + separate large-balance exposure monitoring**.
+**Interpretation:** behavioral ML added clear value for identifying runoff events, while simple large-balance ranking was stronger for concentrating dollar exposure. A fixed percentage threshold assigns the same event label to the same proportional decline regardless of account size, so event frequency and dollar materiality can diverge. The practical recommendation is therefore **behavioral risk scoring + separate large-balance exposure monitoring**.
 
 ![Risk concentration](reports/figures/risk_concentration.png)
 
 ## From performance to model validity
 
-The initial result was deliberately stress-tested rather than treated as final. A stricter robustness analysis removed accounts with obvious deterioration at the scoring date; performance declined materially, indicating that some headline performance came from already-visible deterioration.
+The initial result was deliberately stress-tested rather than treated as final. A **post-hoc robustness analysis** — not an independent confirmatory holdout — excluded accounts with obvious deterioration already visible at the scoring date; performance declined materially, confirming that some headline signal reflected already-visible deterioration, though some forward-looking ranking signal remained.
 
 The final stage redesigned the experiment into distinct windows:
 

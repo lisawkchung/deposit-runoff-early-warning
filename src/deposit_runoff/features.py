@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -62,6 +63,10 @@ def build_v1_snapshot(
 
     Features use dates <= snapshot. The target uses only dates after the snapshot.
     This separation is the core leakage guardrail of the initial model.
+
+    Rows with incomplete future windows are dropped. In datasets where closed accounts
+    stop generating daily rows, this can systematically exclude severe runoff events,
+    so source lifecycle semantics should be verified before relying on this label.
     """
     daily = validate_daily_panel(daily)
     snapshot = pd.Timestamp(snapshot_date)
@@ -93,7 +98,10 @@ def build_v1_snapshot(
         n_obs_30d="count",
     )
     r = recent.groupby("account_id", observed=True)["balance"].mean().rename("avg_bal_7d")
-    f = future.groupby("account_id", observed=True)["balance"].mean().rename("avg_bal_future_30d")
+    f = future.groupby("account_id", observed=True)["balance"].agg(
+        avg_bal_future_30d="mean",
+        n_future_30d="count",
+    )
 
     base = cohort[
         [
@@ -113,6 +121,18 @@ def build_v1_snapshot(
     )
     out = out.loc[(out["avg_bal_30d"] > 0) & out["avg_bal_future_30d"].notna()].copy()
 
+    incomplete = out["n_future_30d"] < future_days
+    n_incomplete = int(incomplete.sum())
+    if n_incomplete:
+        warnings.warn(
+            f"{n_incomplete} account(s) dropped from snapshot {snapshot.date()} "
+            f"due to an incomplete future window (fewer than {future_days} observations). "
+            "In datasets where closed accounts stop generating daily rows, this can "
+            "systematically exclude severe runoff events; verify source lifecycle semantics.",
+            stacklevel=2,
+        )
+    out = out.loc[~incomplete].copy()
+
     denom = out["avg_bal_30d"].abs().replace(0, np.nan)
     out["snapshot_date"] = snapshot
     out["asof_vs_30d_avg_pct"] = (out["asof_balance"] - out["avg_bal_30d"]) / denom
@@ -125,7 +145,7 @@ def build_v1_snapshot(
     ).astype("int8")
     out["runoff_amount"] = (out["avg_bal_30d"] - out["avg_bal_future_30d"]).clip(lower=0)
 
-    return out.drop(columns=["avg_bal_future_30d", "open_date"])
+    return out.drop(columns=["avg_bal_future_30d", "n_future_30d", "open_date"])
 
 
 def build_v1_dataset(
