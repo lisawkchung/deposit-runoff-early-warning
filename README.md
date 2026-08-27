@@ -86,7 +86,7 @@ Natural next steps are transaction/cash-flow features, relationship-level aggreg
 The original institutional results cannot be regenerated publicly because the underlying data are confidential. The public repo reproduces the **transformation, target, validation, modeling, audit, and redesign code paths** with deterministic synthetic data.
 
 ```bash
- git clone <REPO_URL>
+ git clone https://github.com/lisawkchung/deposit-runoff-early-warning
  cd deposit-runoff-early-warning
  python -m venv .venv
  source .venv/bin/activate
